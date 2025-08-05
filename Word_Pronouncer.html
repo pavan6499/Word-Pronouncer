@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Pronouncer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #edf2f7;
+            transform: translateY(-1px);
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .word-display {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .original-word {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .syllables-container {
+            margin: 20px 0;
+        }
+
+        .syllables-title {
+            font-size: 1.2em;
+            color: #4a5568;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .syllables {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .syllable {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .syllable:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .syllable:active {
+            transform: scale(0.95);
+        }
+
+        .syllable::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .syllable:hover::before {
+            left: 100%;
+        }
+
+        .pronunciation-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .phonetic {
+            color: #718096;
+            font-style: italic;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        .loading {
+            display: none;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #e53e3e;
+        }
+
+        .success-animation {
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .syllables {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .pronunciation-controls {
+                flex-direction: column;
+            }
+        }
+
+        .speaker-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗣️ Word Pronouncer</h1>
+        <p style="color: #718096; margin-bottom: 30px;">Enter any word and learn how to pronounce it in 2 easy parts with Indian English accent!</p>
+        
+        <div class="input-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="wordInput" 
+                    placeholder="Enter a word to pronounce..." 
+                    autocomplete="off"
+                >
+                <button class="btn btn-primary" onclick="processWord()">
+                    <svg class="speaker-icon" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    Analyze
+                </button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            Analyzing word...
+        </div>
+
+        <div class="results" id="results">
+            <div class="word-display">
+                <div class="original-word" id="originalWord"></div>
+                <div class="phonetic" id="phoneticDisplay"></div>
+            </div>
+
+            <div class="syllables-container">
+                <div class="syllables-title">Click each part to hear it:</div>
+                <div class="syllables" id="syllablesContainer"></div>
+            </div>
+
+            <div class="pronunciation-controls">
+                <button class="btn btn-secondary" onclick="pronounceSyllables()">
+                    <svg class="speaker-icon" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+                    </svg>
+                    Practice Parts
+                </button>
+                <button class="btn btn-primary" onclick="pronounceFullWord()">
+                    <svg class="speaker-icon" viewBox="0 0 24 24">
+                        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                    </svg>
+                    Full Word
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentWord = '';
+        let syllables = [];
+
+        // Check if speech synthesis is supported
+        if (!('speechSynthesis' in window)) {
+            alert('Speech synthesis is not supported in your browser. Please use a modern browser like Chrome, Firefox, or Safari.');
+        }
+
+        // Split word into 2 readable parts
+        function splitIntoTwoParts(word) {
+            const originalWord = word;
+            word = word.toLowerCase().replace(/[^a-z]/g, '');
+            
+            // Special cases for optimal 2-part splitting
+            const specialCases = {
+                'beautiful': ['beau', 'tiful'],
+                'wonderful': ['won', 'derful'],
+                'important': ['im', 'portant'],
+                'information': ['infor', 'mation'],
+                'understand': ['under', 'stand'],
+                'different': ['differ', 'ent'],
+                'computer': ['com', 'puter'],
+                'yesterday': ['yester', 'day'],
+                'together': ['to', 'gether'],
+                'because': ['be', 'cause'],
+                'something': ['some', 'thing'],
+                'everything': ['every', 'thing'],
+                'nothing': ['no', 'thing'],
+                'anything': ['any', 'thing'],
+                'someone': ['some', 'one'],
+                'everyone': ['every', 'one'],
+                'anyone': ['any', 'one'],
+                'maybe': ['may', 'be'],
+                'birthday': ['birth', 'day'],
+                'morning': ['morn', 'ing'],
+                'evening': ['eve', 'ning'],
+                'afternoon': ['after', 'noon'],
+                'weekend': ['week', 'end'],
+                'summer': ['sum', 'mer'],
+                'winter': ['win', 'ter'],
+                'spring': ['spr', 'ing'],
+                'autumn': ['au', 'tumn'],
+                'problem': ['prob', 'lem'],
+                'student': ['stu', 'dent'],
+                'teacher': ['teach', 'er'],
+                'kitchen': ['kit', 'chen'],
+                'bedroom': ['bed', 'room'],
+                'bathroom': ['bath', 'room'],
+                'chicken': ['chick', 'en'],
+                'animal': ['ani', 'mal'],
+                'elephant': ['ele', 'phant'],
+                'monkey': ['mon', 'key'],
+                'picture': ['pic', 'ture'],
+                'water': ['wa', 'ter'],
+                'better': ['bet', 'ter'],
+                'never': ['nev', 'er'],
+                'always': ['al', 'ways'],
+                'another': ['an', 'other'],
+                'without': ['with', 'out'],
+                'between': ['be', 'tween'],
+                'inside': ['in', 'side'],
+                'outside': ['out', 'side'],
+                'number': ['num', 'ber'],
+                'people': ['peo', 'ple'],
+                'children': ['child', 'ren'],
+                'family': ['fam', 'ily'],
+                'mother': ['moth', 'er'],
+                'father': ['fa', 'ther'],
+                'sister': ['sis', 'ter'],
+                'brother': ['broth', 'er'],
+                'orange': ['or', 'ange'],
+                'purple': ['pur', 'ple'],
+                'yellow': ['yel', 'low'],
+                'pizza': ['piz', 'za'],
+                'happy': ['hap', 'py'],
+                'hungry': ['hun', 'gry'],
+                'sleepy': ['sleep', 'y'],
+                'bottle': ['bot', 'tle'],
+                'little': ['lit', 'tle'],
+                'middle': ['mid', 'dle'],
+                'simple': ['sim', 'ple'],
+                'table': ['ta', 'ble'],
+                'apple': ['ap', 'ple'],
+                'banana': ['ba', 'nana'],
+                'coffee': ['cof', 'fee'],
+                'cookie': ['cook', 'ie'],
+                'flower': ['flow', 'er'],
+                'shower': ['show', 'er'],
+                'finger': ['fin', 'ger'],
+                'summer': ['sum', 'mer'],
+                'winter': ['win', 'ter'],
+                'market': ['mar', 'ket'],
+                'pencil': ['pen', 'cil'],
+                'window': ['win', 'dow'],
+                'sandwich': ['sand', 'wich'],
+                'hospital': ['hos', 'pital'],
+                'garden': ['gar', 'den'],
+                'listen': ['lis', 'ten'],
+                'answer': ['an', 'swer'],
+                'question': ['ques', 'tion'],
+                'minute': ['min', 'ute'],
+                'second': ['sec', 'ond'],
+                'dollar': ['dol', 'lar'],
+                'turkey': ['tur', 'key'],
+                'monkey': ['mon', 'key'],
+                'donkey': ['don', 'key'],
+                'whiskey': ['whis', 'key'],
+                'hockey': ['hock', 'ey'],
+                'journey': ['jour', 'ney'],
+                'mountain': ['moun', 'tain'],
+                'fountain': ['foun', 'tain'],
+                'captain': ['cap', 'tain'],
+                'certain': ['cer', 'tain'],
+                'curtain': ['cur', 'tain'],
+                'bargain': ['bar', 'gain'],
+                'explain': ['ex', 'plain'],
+                'contain': ['con', 'tain'],
+                'maintain': ['main', 'tain'],
+                'obtain': ['ob', 'tain'],
+                'remain': ['re', 'main'],
+                'complain': ['com', 'plain'],
+                'refrain': ['re', 'frain']
+            };
+
+            if (specialCases[word]) {
+                return specialCases[word];
+            }
+
+            // For very short words (4 letters or less), return as single part
+            if (word.length <= 4) {
+                return [originalWord];
+            }
+
+            // Find the best split point for 2 parts
+            const vowels = 'aeiouy';
+            let bestSplit = Math.floor(word.length / 2);
+            
+            // Look for natural break points around the middle
+            for (let i = Math.floor(word.length * 0.3); i <= Math.floor(word.length * 0.7); i++) {
+                // Prefer splitting after a vowel or before a consonant cluster
+                if (i > 0 && i < word.length - 1) {
+                    const currentChar = word[i];
+                    const prevChar = word[i - 1];
+                    const nextChar = word[i + 1];
+                    
+                    // Good split points:
+                    // 1. After vowel + before consonant
+                    // 2. Between double consonants
+                    // 3. Before common suffixes
+                    if ((vowels.includes(prevChar) && !vowels.includes(currentChar)) ||
+                        (prevChar === currentChar && !vowels.includes(currentChar)) ||
+                        (word.substring(i).match(/^(ing|tion|sion|ness|ment|able|ible|ful|less|ly)$/))) {
+                        bestSplit = i;
+                        break;
+                    }
+                }
+            }
+            
+            // Ensure we don't split too early or too late
+            bestSplit = Math.max(2, Math.min(word.length - 2, bestSplit));
+            
+            const part1 = originalWord.substring(0, bestSplit);
+            const part2 = originalWord.substring(bestSplit);
+            
+            return [part1, part2];
+        }
+
+        function speakText(text, rate = 0.8, pitch = 1.0) {
+            return new Promise((resolve) => {
+                // Cancel any ongoing speech
+                speechSynthesis.cancel();
+                
+                // Small delay to ensure cancellation is processed
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = rate;
+                    utterance.pitch = pitch;
+                    utterance.volume = 1.0;
+                    
+                    // Get all available voices
+                    const voices = speechSynthesis.getVoices();
+                    
+                    // Comprehensive search for Indian English voices
+                    let preferredVoice = 
+                        // First priority: Explicit Indian English voices
+                        voices.find(voice => voice.lang === 'en-IN') ||
+                        
+                        // Second priority: Common Indian voice names
+                        voices.find(voice => 
+                            voice.name.toLowerCase().includes('ravi') ||
+                            voice.name.toLowerCase().includes('aditi') ||
+                            voice.name.toLowerCase().includes('priya') ||
+                            voice.name.toLowerCase().includes('kavya') ||
+                            voice.name.toLowerCase().includes('heera') ||
+                            voice.name.toLowerCase().includes('kalpana') ||
+                            voice.name.toLowerCase().includes('swara') ||
+                            voice.name.toLowerCase().includes('indian')
+                        ) ||
+                        
+                        // Third priority: Microsoft Indian voices (Windows)
+                        voices.find(voice => 
+                            voice.name.includes('Microsoft Heera') ||
+                            voice.name.includes('Microsoft Kalpana') ||
+                            voice.name.includes('Microsoft Hemant')
+                        ) ||
+                        
+                        // Fourth priority: Google Indian voices
+                        voices.find(voice => 
+                            voice.name.includes('Google हिन्दी') ||
+                            voice.name.includes('Google Hindi') ||
+                            voice.name.includes('hi-IN')
+                        ) ||
+                        
+                        // Fifth priority: British English (closer to Indian pronunciation)
+                        voices.find(voice => 
+                            voice.lang === 'en-GB' ||
+                            voice.name.toLowerCase().includes('british') ||
+                            voice.name.toLowerCase().includes('daniel') ||
+                            voice.name.toLowerCase().includes('hazel')
+                        ) ||
+                        
+                        // Sixth priority: Australian English (also closer to Indian)
+                        voices.find(voice => 
+                            voice.lang === 'en-AU' ||
+                            voice.name.toLowerCase().includes('karen') ||
+                            voice.name.toLowerCase().includes('catherine')
+                        ) ||
+                        
+                        // Seventh priority: Any female English voice (often clearer)
+                        voices.find(voice => 
+                            voice.lang.startsWith('en') && 
+                            (voice.name.toLowerCase().includes('female') || 
+                             voice.name.toLowerCase().includes('zira') ||
+                             voice.name.toLowerCase().includes('susan') ||
+                             voice.name.toLowerCase().includes('samantha'))
+                        ) ||
+                        
+                        // Final fallback: Any English voice
+                        voices.find(voice => voice.lang.startsWith('en'));
+                    
+                    if (preferredVoice) {
+                        utterance.voice = preferredVoice;
+                        console.log('🎤 Using voice:', preferredVoice.name, '(' + preferredVoice.lang + ')');
+                    } else {
+                        console.log('⚠️ No suitable voice found, using default');
+                    }
+                    
+                    // Event handlers to ensure proper completion
+                    utterance.onend = function() {
+                        console.log('✅ Finished speaking:', text);
+                        resolve();
+                    };
+                    
+                    utterance.onerror = function(event) {
+                        console.log('❌ Speech error:', event.error, 'for text:', text);
+                        resolve(); // Resolve anyway to prevent hanging
+                    };
+                    
+                    utterance.onstart = function() {
+                        console.log('▶️ Started speaking:', text);
+                    };
+                    
+                    // Ensure the utterance is spoken
+                    speechSynthesis.speak(utterance);
+                    
+                    // Fallback timeout in case speech doesn't complete properly
+                    const timeoutDuration = Math.max(3000, text.length * 300); // Longer timeout
+                    setTimeout(() => {
+                        if (speechSynthesis.speaking) {
+                            console.log('⏰ Timeout reached, cancelling speech');
+                            speechSynthesis.cancel();
+                        }
+                        resolve();
+                    }, timeoutDuration);
+                    
+                }, 150); // Longer delay before starting new speech
+            });
+        }
+
+        function processWord() {
+            const input = document.getElementById('wordInput');
+            const word = input.value.trim();
+            
+            if (!word) {
+                alert('Please enter a word!');
+                return;
+            }
+
+            currentWord = word;
+            syllables = splitIntoTwoParts(word);
+            
+            showLoading(true);
+            
+            // Simulate processing time for better UX
+            setTimeout(() => {
+                displayResults();
+                showLoading(false);
+            }, 500);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function displayResults() {
+            document.getElementById('originalWord').textContent = currentWord;
+            document.getElementById('phoneticDisplay').textContent = `/${currentWord}/`;
+            
+            const syllablesContainer = document.getElementById('syllablesContainer');
+            syllablesContainer.innerHTML = '';
+            
+            syllables.forEach((syllable, index) => {
+                const syllableElement = document.createElement('div');
+                syllableElement.className = 'syllable';
+                syllableElement.textContent = syllable;
+                syllableElement.onclick = () => speakSyllable(syllable, syllableElement);
+                syllablesContainer.appendChild(syllableElement);
+            });
+            
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').classList.add('success-animation');
+            
+            // Auto-pronounce the full word once
+            setTimeout(() => {
+                pronounceFullWord();
+            }, 1000); // Increased delay to ensure everything is loaded
+        }
+
+        function speakSyllable(syllable, element) {
+            element.style.transform = 'scale(1.1)';
+            element.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+            
+            speakText(syllable, 0.6).then(() => {
+                setTimeout(() => {
+                    element.style.transform = '';
+                    element.style.boxShadow = '';
+                }, 200);
+            });
+        }
+
+        async function pronounceSyllables() {
+            const syllableElements = document.querySelectorAll('.syllable');
+            
+            for (let i = 0; i < syllables.length; i++) {
+                const syllable = syllables[i];
+                const element = syllableElements[i];
+                
+                if (element) {
+                    // Visual feedback
+                    element.style.transform = 'scale(1.1)';
+                    element.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.6)';
+                    
+                    // Speak the syllable and wait for it to complete
+                    await speakText(syllable, 0.6);
+                    
+                    // Reset visual feedback
+                    element.style.transform = '';
+                    element.style.boxShadow = '';
+                    
+                    // Pause between syllables (only if not the last one)
+                    if (i < syllables.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+            }
+        }
+
+        function pronounceFullWord() {
+            speakText(currentWord, 0.8).then(() => {
+                // Visual feedback completion
+                const wordDisplay = document.getElementById('originalWord');
+                wordDisplay.style.color = '';
+                wordDisplay.style.transform = '';
+            });
+            
+            // Visual feedback during speech
+            const wordDisplay = document.getElementById('originalWord');
+            wordDisplay.style.color = '#667eea';
+            wordDisplay.style.transform = 'scale(1.05)';
+        }
+
+        // Allow Enter key to trigger word processing
+        document.getElementById('wordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processWord();
+            }
+        });
+
+        // Load voices when available and show available Indian voices
+        speechSynthesis.onvoiceschanged = function() {
+            const voices = speechSynthesis.getVoices();
+            const indianVoices = voices.filter(voice => 
+                voice.lang === 'en-IN' || 
+                voice.name.toLowerCase().includes('india') ||
+                voice.name.toLowerCase().includes('ravi') ||
+                voice.name.toLowerCase().includes('aditi') ||
+                voice.name.toLowerCase().includes('priya') ||
+                voice.lang.startsWith('hi-')
+            );
+            
+            if (indianVoices.length > 0) {
+                console.log('Available Indian voices:', indianVoices.map(v => v.name + ' (' + v.lang + ')'));
+            } else {
+                console.log('No specific Indian voices found. Using British English as alternative.');
+            }
+        };
+
+        // Focus input on page load
+        window.onload = function() {
+            document.getElementById('wordInput').focus();
+        };
+    </script>
+</body>
+</html>
